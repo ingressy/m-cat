@@ -53,14 +53,15 @@ def image_gen(epd,h, w, ver, ip, ssid, fortime, booterror):
 
     #font things
     big_font = ImageFont.truetype(font=os.path.join('Roboto-Regular.ttf'), size=18)
+    cat_font = ImageFont.truetype(font=os.path.join('RubikVinyl-Regular.ttf'), size=24)
     text_font = ImageFont.truetype(font=os.path.join('Roboto-Regular.ttf'), size=14)
     update_font = ImageFont.truetype(font=os.path.join('Roboto-Regular.ttf'), size=12)
 
     #draw image with text and stuff ~yeah
-    draw.text((10, 10), f"m~cat {ver}", font=big_font, fill=0, align='left')
+    draw.text((10, 10), f"m~cat {ver}", font=cat_font, fill=0, align='left')
     draw.text((10, 30), f"by ingressy", font=text_font, fill=0, align='left')
     draw.text((10, 60), f"{ip}", font=update_font, fill=0, align="left")
-    draw.text((10, 80), f"{ssid}", font=update_font, fill=0, align="left")
+    draw.text((10, 70), f"{ssid}", font=update_font, fill=0, align="left")
     draw.text((0, 110), f"last update: {fortime}", font=update_font, fill=0, align='left')
 
     #fix a "small" bug xD
