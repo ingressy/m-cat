@@ -1,7 +1,6 @@
-import json#,os, time, socket, subprocess
+import json
 from bootscreen import boot
-#from lib import epd2in13_V4
-#from PIL import Image, ImageDraw, ImageFont, ImageOps
+from dashboard import dash
 
 def main():
     try:
@@ -14,11 +13,12 @@ def main():
 
             #started the boot screen with the ver var
             boot(ver)
+            dash()
 
     except FileNotFoundError:
         #created the config.json file
         configfile = {"config": [
-            {"version": "v0.2"}
+            {"version": "v0.3"}
         ]}
         with open('config.json', 'w') as file:
             json.dump(configfile, file, indent=4)
