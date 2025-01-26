@@ -1,0 +1,7 @@
+schedule
+bambulabs_api
+psutil
+pillow
+openmeteo_requests
+requests_cache
+retry_requests
