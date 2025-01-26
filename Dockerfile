@@ -1,4 +1,4 @@
-FROM python:3
+FROM arm64v8/python:3
 
 WORKDIR /mcat
 COPY requirements.txt ./
