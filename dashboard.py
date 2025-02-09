@@ -26,7 +26,7 @@ def dash():
         status_bar()
         people_in_sky()
         if untisenable == "true":
-            untisstundenplan()
+            untis()
         tide()
         time_things()
         sys_status()
@@ -77,7 +77,7 @@ def flash_image():
     epd.display(epd.getbuffer(roimg))
     epd.sleep()
 
-def untisstundenplan():
+def untis():
     s = webuntis.Session(
         server=data["config"][3]["server"],
         username=data["config"][3]["username"],
@@ -91,7 +91,6 @@ def untisstundenplan():
     end = start + timedelta(days=6)
     time = datetime.now()
     chtime = (time.strftime("%H%M"))
-    # chtime = "1222"
     cache = []
 
     klasse = s.klassen().filter(name=data["config"][3]["class"])
@@ -129,7 +128,6 @@ def untisstundenplan():
         cache.append(sub)
         cache.append(c)
 
-        # print(cache)
 
         for i in range(0, len(cache), 9):
             datum = cache[i]
@@ -138,7 +136,7 @@ def untisstundenplan():
             endtime = cache[i + 3]
             etime = cache[i + 4]
 
-            starttime = cache[i + 1]
+            #starttime = cache[i + 1]
             stime = cache[i + 2]
             teacher = cache[i + 5]
             room = cache[i + 6]
@@ -148,13 +146,20 @@ def untisstundenplan():
             if datum == datetime.today().strftime("%Y-%m-%d"):
                 if endtime >= chtime:
                     font = ImageFont.truetype(font=os.path.join(fontf), size=12)
+                    if room is None or not room.strip():
+                        room = "---"
+                    if subject is None or not subject.strip():
+                        subject = "---"
                     draw.text((0, 47),f"{stime} - {etime} | {teacher} | {room} | {subject}  | {can}", font=font, fill=0, align='left')
                     break
             else:
                 font = ImageFont.truetype(font=os.path.join(fontf), size=12)
+                if room is None or not room.strip():
+                    room = "---"
+                if subject is None or not subject.strip():
+                    subject = "---"
                 draw.text((0, 47), f"{datumkurz} | {stime} - {etime} | {teacher} | {room} | {subject}  | {can}", font=font, fill=0, align='left')
                 break
-            # print(datetime.today().strftime("%Y-%m-%d"))
 def weather_infos():
 
     global temp, hum, win, gus, dir, atemp, rai, sno
