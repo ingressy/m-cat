@@ -35,13 +35,13 @@ def main():
     except FileNotFoundError:
         #created the config.json file
         configfile = {"config": [
-            {"version": "v0.6Untis", "webinterface": "true",
+            {"version": "v0.6.1", "webinterface": "true",
             "font-file": "/home/ingressy/mcat/code/Roboto-Regular.ttf"},
             {"latitude": "53.0451", "longitude": "8.8535"},
-            {"birthday_month": "", "birthday_day": ""},
-            {"untisenable": "false", "server": "", "username": "",
-             "password": "", "school": "",
-             "useragent": "", "class": "}
+            {"birthday_month": "3", "birthday_day": "9"},
+            {"untisenable": "true", "server": "https://tipo.webuntis.com", "username": "dummy3",
+             "password": "NewShit24!", "school": "TBZ Mitte Bremen",
+             "useragent": "dummy3", "class": "BGT 241"}
         ]}
         with open('/home/ingressy/mcat/code/config.json', 'w') as file:
             json.dump(configfile, file, indent=4)
