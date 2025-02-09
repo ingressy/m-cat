@@ -41,8 +41,8 @@ def boot(ver):
 
         image_gen(epd, h, w, ver, ip, ssid, fortime, booterror)
 
-    except IOError as e:
-        print("IOError:", e)
+   # except IOError as e:
+    #    print("IOError:", e)
     except KeyboardInterrupt:
         epd.sleep()
 
@@ -52,10 +52,10 @@ def image_gen(epd,h, w, ver, ip, ssid, fortime, booterror):
     draw = ImageDraw.Draw(image)
 
     #font things
-    big_font = ImageFont.truetype(font=os.path.join('Roboto-Regular.ttf'), size=18)
-    cat_font = ImageFont.truetype(font=os.path.join('RubikVinyl-Regular.ttf'), size=24)
-    text_font = ImageFont.truetype(font=os.path.join('Roboto-Regular.ttf'), size=14)
-    update_font = ImageFont.truetype(font=os.path.join('Roboto-Regular.ttf'), size=12)
+    big_font = ImageFont.truetype(font=os.path.join('/home/ingressy/mcat/code/Roboto-Regular.ttf'), size=18)
+    cat_font = ImageFont.truetype(font=os.path.join('/home/ingressy/mcat/code/RubikVinyl-Regular.ttf'), size=24)
+    text_font = ImageFont.truetype(font=os.path.join('/home/ingressy/mcat/code/Roboto-Regular.ttf'), size=14)
+    update_font = ImageFont.truetype(font=os.path.join('/home/ingressy/mcat/code/Roboto-Regular.ttf'), size=12)
 
     #draw image with text and stuff ~yeah
     draw.text((10, 10), f"m~cat {ver}", font=cat_font, fill=0, align='left')
@@ -64,11 +64,13 @@ def image_gen(epd,h, w, ver, ip, ssid, fortime, booterror):
     draw.text((10, 70), f"{ssid}", font=update_font, fill=0, align="left")
     draw.text((0, 110), f"last update: {fortime}", font=update_font, fill=0, align='left')
 
-    #fix a "small" bug xD
-    rotated_image = ImageOps.mirror(image)
+    # fix a "small" bug xD
+    epd.init()
 
-    #display image and display goes sleeping
-    epd.display(epd.getbuffer(rotated_image))
+    # rotated_image = ImageOps.mirror(image)
+    realimg = image.transpose(Image.FLIP_TOP_BOTTOM)
+    roimg = ImageOps.mirror(realimg)
+    epd.display(epd.getbuffer(roimg))
     epd.sleep()
 
     #check prg has a fail ...
