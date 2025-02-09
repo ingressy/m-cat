@@ -1,4 +1,4 @@
-import time, os, openmeteo_requests, requests_cache, psutil, json, re, webuntis, requests
+import time, os, openmeteo_requests, requests_cache, psutil, json, re, webuntis, requests, subprocess
 from datetime import datetime, timedelta
 from lib import epd2in13_V4
 from PIL import Image, ImageDraw, ImageFont, ImageOps
@@ -200,12 +200,19 @@ def weather_infos():
     sno = round(current_snowfall, 2)
 
 def sys_status():
+    #check system updates
+    result = subprocess.run(["apt", "list", "--upgradable"], capture_output=True, text=True)
+    updates = result.stdout.strip().split("\n")
+
     cpu = psutil.cpu_percent(interval=1)
     mem = psutil.virtual_memory()[2]
     disk = psutil.disk_usage('/')[3]
 
     font = ImageFont.truetype(font=os.path.join(fontf), size=12)
-    draw.text((0,95), f"CPU: {cpu}% | MEM: {mem}% | DISK: {disk}%", font=font, fill=0, align='left')
+    if len(updates) > 1:
+        draw.text((0,95), f"{cpu}% | {mem}% | {disk}% | Updates available", font=font, fill=0, align='left')
+    else:
+        draw.text((0,95), f"CPU: {cpu}% | MEM: {mem}% | DISK: {disk}%", font=font, fill=0, align='left')
 
 def time_things():
     birthday_month =  int(data["config"][2]["birthday_month"])
