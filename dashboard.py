@@ -1,11 +1,11 @@
-import time, os, openmeteo_requests, requests_cache, psutil, json, re
+import time, os, openmeteo_requests, requests_cache, psutil, json, re, webuntis, requests
 from datetime import datetime, timedelta
 from lib import epd2in13_V4
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from retry_requests import retry
 
 def dash():
-    global epd, h, w, image, draw, data
+    global epd, h, w, image, draw, data, fontf
     # display init
     epd = epd2in13_V4.EPD()
     epd.init()
@@ -18,21 +18,21 @@ def dash():
     image = Image.new(mode='1', size=(h, w), color=255)
     draw = ImageDraw.Draw(image)
 
-    #try:
-    with open('config.json', 'r') as configfile:
+    with open('/home/ingressy/mcat/code/config.json', 'r') as configfile:
         data = json.load(configfile)
+        fontf = data["config"][0]["font-file"]
+        untisenable = data["config"][3]["untisenable"]
 
         status_bar()
+        people_in_sky()
+        if untisenable == "true":
+            untisstundenplan()
         tide()
         time_things()
         sys_status()
         update_text()
 
         flash_image()
-    #except:
-       # print("Configfile not found !")
-       # exit(0)
-
 def update_text():
     global rotated_image
 
@@ -43,25 +43,118 @@ def update_text():
     ltime = time.localtime()
     fortime = time.strftime("%H:%M:%S | %d/%m/%Y", ltime)
 
-    update_font = ImageFont.truetype(font=os.path.join('Roboto-Regular.ttf'), size=12)
+    update_font = ImageFont.truetype(font=os.path.join(fontf), size=12)
 
     draw.text((0, 110), f"last update: {fortime}", font=update_font, fill=0, align='left')
 
 def status_bar():
-    bar_font = ImageFont.truetype(font=os.path.join('Roboto-Regular.ttf'), size=12)
+    bar_font = ImageFont.truetype(font=os.path.join(fontf), size=12)
     weather_infos()
 
     draw.text((0,0), f"{temp}°C | {hum}% | {win}kn | {gus}kn | {dir}°", font=bar_font, fill=0, align='left')
     draw.text((0, 12), f"{atemp}°C | rain: {rai}mm | snow: {sno}cm", font=bar_font, fill=0, align='left')
 
+def people_in_sky():
+    # API-Endpunkt für die Anzahl der Menschen im All
+    url = "http://api.open-notify.org/astros.json"
+
+    # Abrufen der Daten
+    response = requests.get(url)
+    data = response.json()
+
+    # Ausgabe der aktuellen Anzahl der Menschen im All
+    print(f"Es sind derzeit {data['number']} Menschen im All.")
+
+    font = ImageFont.truetype(font=os.path.join(fontf), size=12)
+    draw.text((0, 35), f"{data['number']} Menschen sind im All", font=font, fill=0,align='left')
 def flash_image():
-    #fix a "small" bug xD
+    # fix a "small" bug xD
     epd.init()
 
-    rotated_image = ImageOps.mirror(image)
-    epd.display(epd.getbuffer(rotated_image))
+    # rotated_image = ImageOps.mirror(image)
+    realimg = image.transpose(Image.FLIP_TOP_BOTTOM)
+    roimg = ImageOps.mirror(realimg)
+    epd.display(epd.getbuffer(roimg))
     epd.sleep()
 
+def untisstundenplan():
+    s = webuntis.Session(
+        server=data["config"][3]["server"],
+        username=data["config"][3]["username"],
+        password=data["config"][3]["password"],
+        school=data["config"][3]["school"],
+        useragent=data["config"][3]["useragent"]
+    )
+    s.login()
+
+    start = datetime.now()
+    end = start + timedelta(days=6)
+    time = datetime.now()
+    chtime = (time.strftime("%H%M"))
+    # chtime = "1222"
+    cache = []
+
+    klasse = s.klassen().filter(name=data["config"][3]["class"])
+    tt = s.timetable(klasse=klasse[0], start=start, end=end)
+    tt = sorted(tt, key=lambda x: x.start)
+
+    time_format_date = "%Y-%m-%d"
+    time_format_end = "%H%M"
+    time_format_start = time_format_end
+    time_start = "%H:%M"
+    time_end = "%H:%M"
+
+    for po in tt:
+        d = po.start.strftime(time_format_date)
+        s = po.start.strftime(time_format_start)
+        sf = po.start.strftime(time_start)
+        e = po.end.strftime(time_format_end)
+        ef = po.end.strftime(time_end)
+        k = " ".join([k.name for k in po.klassen])
+        try:
+            t = " ".join([t.name for t in po.teachers])
+        except IndexError:
+            t = "--"
+        r = " ".join([r.name for r in po.rooms])
+        sub = " ".join([r.name for r in po.subjects])
+        c = "(" + po.code + ")" if po.code is not None else ""
+
+        cache.append(d)
+        cache.append(s)
+        cache.append(sf)
+        cache.append(e)
+        cache.append(ef)
+        cache.append(t)
+        cache.append(r)
+        cache.append(sub)
+        cache.append(c)
+
+        # print(cache)
+
+        for i in range(0, len(cache), 9):
+            datum = cache[i]
+            datumkurz = datum[5:]
+            datumkurz = ".".join(datumkurz.split("-")[::-1])
+            endtime = cache[i + 3]
+            etime = cache[i + 4]
+
+            starttime = cache[i + 1]
+            stime = cache[i + 2]
+            teacher = cache[i + 5]
+            room = cache[i + 6]
+            subject = cache[i + 7]
+            can = cache[i + 8]
+
+            if datum == datetime.today().strftime("%Y-%m-%d"):
+                if endtime >= chtime:
+                    font = ImageFont.truetype(font=os.path.join(fontf), size=12)
+                    draw.text((0, 47),f"{stime} - {etime} | {teacher} | {room} | {subject}  | {can}", font=font, fill=0, align='left')
+                    break
+            else:
+                font = ImageFont.truetype(font=os.path.join(fontf), size=12)
+                draw.text((0, 47), f"{datumkurz} | {stime} - {etime} | {teacher} | {room} | {subject}  | {can}", font=font, fill=0, align='left')
+                break
+            # print(datetime.today().strftime("%Y-%m-%d"))
 def weather_infos():
 
     global temp, hum, win, gus, dir, atemp, rai, sno
@@ -73,8 +166,8 @@ def weather_infos():
 
     url = "https://api.open-meteo.com/v1/forecast"
     params = {
-        "latitude": data["config"][0]["latitude"],
-        "longitude": data["config"][0]["longitude"],
+        "latitude": data["config"][1]["latitude"],
+        "longitude": data["config"][1]["longitude"],
         "current": ["temperature_2m", "relative_humidity_2m", "apparent_temperature", "rain", "snowfall", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m"],
         "wind_speed_unit": "kn"
     }
@@ -106,12 +199,12 @@ def sys_status():
     mem = psutil.virtual_memory()[2]
     disk = psutil.disk_usage('/')[3]
 
-    font = ImageFont.truetype(font=os.path.join('Roboto-Regular.ttf'), size=12)
+    font = ImageFont.truetype(font=os.path.join(fontf), size=12)
     draw.text((0,95), f"CPU: {cpu}% | MEM: {mem}% | DISK: {disk}%", font=font, fill=0, align='left')
 
 def time_things():
-    birthday_month =  int(data["config"][0]["birthday_month"])
-    birthday_day = int(data["config"][0]["birthday_day"])
+    birthday_month =  int(data["config"][2]["birthday_month"])
+    birthday_day = int(data["config"][2]["birthday_day"])
     total_sec_in_day = 86400
 
     today = datetime.today()
@@ -134,7 +227,7 @@ def time_things():
     birthday = datetime(birthday_year, birthday_month, birthday_day)
     birthdate = (birthday - today).days
 
-    font = ImageFont.truetype(font=os.path.join('Roboto-Regular.ttf'), size=12)
+    font = ImageFont.truetype(font=os.path.join(fontf), size=12)
     draw.text((0, 71), f"{percentage}% of the year | {daypercentage}% of the day", font=font, fill=0, align='left')
     draw.text((0, 83), f"Birthday in {birthdate} Day(s)", font=font, fill=0, align='left')
 
@@ -156,7 +249,7 @@ def adjust_time_for_dst(date_str, time_str):
     return time_str
 
 def tide():
-    with open("tide.txt", "r") as file:
+    with open("/home/ingressy/mcat/code/tide.txt", "r") as file:
         data = file.read()
 
     pattern = r"#([NH])#\w{2}#\s*(\d+\.\s*\d+\.\s*\d{4})#\s*(\d{1,2}:\d{2})#"
@@ -178,5 +271,5 @@ def tide():
     h_times_str = ", ".join(h_times) if h_times else "Keine"
     n_times_str = ", ".join(n_times) if n_times else "Keine"
 
-    font = ImageFont.truetype(font=os.path.join('Roboto-Regular.ttf'), size=12)
+    font = ImageFont.truetype(font=os.path.join(fontf), size=12)
     draw.text((0, 59), f"HW: {h_times_str} | NW: {n_times_str}", font=font, fill=0, align='left')
