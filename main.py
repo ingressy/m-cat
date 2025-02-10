@@ -35,7 +35,7 @@ def main():
     except FileNotFoundError:
         #created the config.json file
         configfile = {"config": [
-            {"version": "v0.6.2", "webinterface": "true",
+            {"version": "v0.6.3", "webinterface": "true",
             "font-file": "/home/ingressy/mcat/code/Roboto-Regular.ttf"},
             {"latitude": "53.0451", "longitude": "8.8535"},
             {"birthday_month": "3", "birthday_day": "9"},
