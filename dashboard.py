@@ -25,13 +25,13 @@ def dash():
         untisenable = data["config"][3]["untisenable"]
 
         status_bar()
-        people_in_sky()
         if untisenable == "true":
             untis()
         tide()
         time_things()
         sys_status()
         update_text()
+        vbn()
 
         flash_image()
 def update_text():
@@ -55,19 +55,6 @@ def status_bar():
     draw.text((0,0), f"{temp}°C | {hum}% | {win}kn | {gus}kn | {dir}°", font=bar_font, fill=0, align='left')
     draw.text((0, 12), f"{atemp}°C | rain: {rai}mm | snow: {sno}cm", font=bar_font, fill=0, align='left')
 
-def people_in_sky():
-    # API-Endpunkt für die Anzahl der Menschen im All
-    url = "http://api.open-notify.org/astros.json"
-
-    # Abrufen der Daten
-    response = requests.get(url)
-    data = response.json()
-
-    # Ausgabe der aktuellen Anzahl der Menschen im All
-    print(f"Es sind derzeit {data['number']} Menschen im All.")
-
-    font = ImageFont.truetype(font=os.path.join(fontf), size=12)
-    draw.text((0, 35), f"{data['number']} Menschen sind im All", font=font, fill=0,align='left')
 def flash_image():
     # fix a "small" bug xD
     epd.init()
@@ -303,3 +290,52 @@ def tide():
 
     font = ImageFont.truetype(font=os.path.join(fontf), size=12)
     draw.text((0, 59), f"HW: {h_times_str} | NW: {n_times_str}", font=font, fill=0, align='left')
+
+def vbn():
+    # API-URL und Header
+    token = ""
+    url = "http://gtfsr.vbn.de/api/routers/default/index/stops/1:000009014131/stoptimes"
+    headers = {
+        "Authorization": token,
+        "Host": "gtfsr.vbn.de"
+    }
+
+    # API-Anfrage senden
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        data = response.json()
+        departures = []
+        now = datetime.now()
+
+        # Daten auswerten
+        for entry in data:
+            pattern = entry.get("pattern", {}).get("desc", "Unbekannte Linie")
+            for time_entry in entry.get("times", []):
+                service_day = time_entry.get("serviceDay", 0)
+                realtime_departure = time_entry.get("realtimeDeparture", 0)
+
+                # Berechnung der Abfahrtszeit
+                departure_time = datetime.fromtimestamp(service_day) + timedelta(seconds=realtime_departure)
+
+                # Nur Abfahrten in der Zukunft berücksichtigen
+                if departure_time >= now:
+                    formatted_time = departure_time.strftime("%H:%M:%S")
+                    departures.append((pattern, departure_time, formatted_time))
+
+        # Nach tatsächlicher Abfahrtszeit sortieren
+        departures.sort(key=lambda x: x[1])
+
+        # Sortierte Ausgabe der nächsten zwei Abfahrten
+        font = ImageFont.truetype(font=os.path.join(fontf), size=12)
+        if len(departures) >= 2:
+
+            draw.text((0, 23), f"{departures[0][0]}, {departures[0][2]}", font=font, fill=0, align='left')
+            draw.text((0, 35), f"{departures[1][0]}, {departures[1][2]}", font=font, fill=0, align='left')
+        elif len(departures) == 1:
+            draw.text((0, 23), f"{departures[0][0]}, {departures[0][2]}", font=font, fill=0, align='left')
+        else:
+            draw.text((0, 23), f"Keine kommenden Abfahrten verfügbar.", font=font, fill=0, align='left')
+    else:
+        font = ImageFont.truetype(font=os.path.join(fontf), size=12)
+        draw.text((0, 23), f"Keine kommenden Abfahrten verfügbar.", font=font, fill=0, align='left')
