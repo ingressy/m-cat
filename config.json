@@ -1,0 +1,10 @@
+{
+  "config": [
+    {
+      "version": "v1.0",
+      "hassurl": "http://..:8123",
+      "hassapi": "",
+      "font-file": "/home/ingressy/mcat/Roboto-Regular.ttf"
+    }
+  ]
+}
